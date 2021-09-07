@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.autonightlight" path="/org/gnome/shell/extensions/autonightlight/">
+    <key name="night-light-schedule" type="as">
+      <default>[]</default>
+      <summary>Night light schedule</summary>
+      <description>An array of night light schedules</description>
+    </key>
+    <key name="backup-temperature" type="u">
+      <default>4700</default>
+      <summary>Backup temperature</summary>
+      <description>Backup of night light temperature before using extension</description>
+    </key>
+  </schema>
+</schemalist>

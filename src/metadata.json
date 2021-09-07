@@ -1,0 +1,8 @@
+{
+  "name": "Auto Night Light",
+  "description": "Automatically adjust night light",
+  "uuid": "autonightlight@zefty.github.io",
+  "shell-version": [
+    "3.38"
+  ]
+}
