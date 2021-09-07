@@ -1,8 +1,10 @@
 {
   "name": "Auto Night Light",
+  "version": 1,
   "description": "Automatically adjust night light",
   "uuid": "autonightlight@zefty.github.io",
   "shell-version": [
     "3.38"
-  ]
+  ],
+  "url": "https://github.com/Zefty/AutoNightLight"
 }
