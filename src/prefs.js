@@ -19,7 +19,6 @@
 /* exported init buildPrefsWidget */
 
 const {Gio, GObject, Gtk, GLib} = imports.gi;
-const Lang = imports.lang;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
@@ -47,6 +46,10 @@ const AutoNightLightPrefs = new GObject.Class({
         this.mainWidget = this._builder.get_object('main_prefs');
         this._scheduleTreeView = this._builder.get_object("schedule_tree_view");
         this._scheduleDataModel = this._builder.get_object("schedule_data_model");
+
+        // Create diaglog for editing schedule
+        this.editDialog;
+        this._editScheduleWidget = this._builder.get_object('edit_schedule_prefs');
         
         // Load schedules onto tree view 
         this._refreshTreeView();
@@ -86,123 +89,127 @@ const AutoNightLightPrefs = new GObject.Class({
     _bindEventHandlers: function() {
         
         // On clicking add schedule button, open the add night light schedule dialog
-        this._builder.get_object('schedule_add').connect("clicked", Lang.bind(this, () => {
+        this._builder.get_object('schedule_add').connect("clicked", () => {
 
-            // Open new dialog
-            let dialog = new Gtk.Dialog({ 
-                title: 'Add & Modify Night Light Schedule',
-                transient_for: this.mainWidget.get_toplevel(),
-                use_header_bar: true,
-                modal: true 
-            });
-            dialog.show_all(); 
+            // Open dialog for editing schedule
+            if(!this.editDialog) {
+                // Create a new dialog if it does not already exist 
+                this.editDialog = new Gtk.Dialog({ 
+                    title: 'Add & Modify Night Light Schedule',
+                    transient_for: this.mainWidget.get_toplevel(),
+                    use_header_bar: true,
+                    modal: true 
+                });
 
-            // Load edit box from prefs.ui 
-            let editScheduleWidget = this._builder.get_object('edit_schedule_prefs');     
-            dialog.get_content_area().add(editScheduleWidget);  
-
-            // Only destroy dialog and keep edit box alive
-            dialog.connect('response', Lang.bind(this, () => {
-                dialog.get_content_area().remove(editScheduleWidget);
-                dialog.destroy();
-            }));
-            this._builder.get_object('edit_button_cancel').connect("clicked", Lang.bind(this, () => {
-                dialog.get_content_area().remove(editScheduleWidget);
-                dialog.destroy();
-            }));
+                // Load edit box from prefs.ui    
+                this.editDialog.get_content_area().add(this._editScheduleWidget);  
+                
+                // Change delete event to hide dialog instead of destroying dialog
+                this.editDialog.connect('delete-event', () => this.editDialog.hide_on_delete());
+            }
+            this._addOrEdit = 'add';
+            this.editDialog.show_all(); 
             
-            // On clicking the save button, save the current night light schedule 
-            this._builder.get_object('edit_button_save').connect("clicked", Lang.bind(this, () => {
-                
-                // Get schedule data
-                const editHourSpinValue = this._builder.get_object('edit_hour_spin').get_value();
-                const editMinuteSpinValue = this._builder.get_object('edit_minute_spin').get_value();
-                const editTemperatureSpinValue = this._builder.get_object('edit_temperature_spin').get_value();
-                const schedule = `{"hour": ${editHourSpinValue}, "minute": ${editMinuteSpinValue}, "temperature": ${editTemperatureSpinValue}}`;
-
-                // Check if schedule already exists to avoid duplicate schedules
-                for (var i = 0; i < this._schedule.length; i++ ) {
-                    if (this._schedule[i].includes(`"hour": ${editHourSpinValue}, "minute": ${editMinuteSpinValue}`)) {
-                        dialog.get_content_area().remove(editScheduleWidget);
-                        dialog.destroy();
-                        return;
-                    }
-                }
-
-                // Create new schedule if it does not already exist 
-                this._schedule.push(schedule);
-                this._autoNightLightSettings.set_strv('night-light-schedule', this._schedule);
-                
-                // Refresh the treeview
-                this._refreshTreeView();
-                dialog.get_content_area().remove(editScheduleWidget);
-                dialog.destroy();
-            }));
-        }));
+        });
 
         // On clicking remove schedule button, remove the schedule 
-        this._builder.get_object('schedule_remove').connect("clicked", Lang.bind(this, () => {
+        this._builder.get_object('schedule_remove').connect("clicked", () => {
 
             // Remove the selected schedule from tree view and refresh data 
             const selectedSchedule = this._scheduleTreeView.get_selection().get_selected();
+            if(!selectedSchedule[0]) return;
             const scheduleIdx = this._scheduleDataModel.get_path(selectedSchedule[2]).get_indices();
             this._schedule.splice(scheduleIdx, 1);
             this._autoNightLightSettings.set_strv('night-light-schedule', this._schedule);
             this._refreshTreeView();
 
-        }));
+        });
 
         // On clicking edit schedule button, open the edit schedule dialog 
-        this._builder.get_object('schedule_edit').connect("clicked", Lang.bind(this, () => {
+        this._builder.get_object('schedule_edit').connect("clicked", () => {
 
             // Get the selected schedule from tree view 
             const selectedSchedule = this._scheduleTreeView.get_selection().get_selected();
+            if(!selectedSchedule[0]) return;
             const scheduleTime = this._scheduleDataModel.get_value(selectedSchedule[2], 0);
             const scheduleTemperature = this._scheduleDataModel.get_value(selectedSchedule[2], 1);
 
-            // Open new dialog
-            let dialog = new Gtk.Dialog({ 
-                title: 'Add & Modify Night Light Schedule',
-                transient_for: this.mainWidget.get_toplevel(),
-                use_header_bar: true,
-                modal: true 
-            });
-            dialog.show_all(); 
+            // Open dialog for editing schedule
+            if(!this.editDialog) {
+                // Create a new dialog if it does not already exist 
+                this.editDialog = new Gtk.Dialog({ 
+                    title: 'Add & Modify Night Light Schedule',
+                    transient_for: this.mainWidget.get_toplevel(),
+                    use_header_bar: true,
+                    modal: true 
+                });
 
-            // Load edit box from prefs.ui
-            let editScheduleWidget = this._builder.get_object('edit_schedule_prefs');     
-            dialog.get_content_area().add(editScheduleWidget);  
+                // Load edit box from prefs.ui    
+                this.editDialog.get_content_area().add(this._editScheduleWidget);  
+                
+                // Change delete event to hide dialog instead of destroying dialog
+                this.editDialog.connect('delete-event', () => this.editDialog.hide_on_delete());
+            }
+            this._addOrEdit = 'edit';
+            this.editDialog.show_all();  
 
             // Load edit box with selected schedule data 
             this._builder.get_object('edit_hour_spin').set_value(scheduleTime.split(':')[0]);
             this._builder.get_object('edit_minute_spin').set_value(scheduleTime.split(':')[1]);
             this._builder.get_object('edit_temperature_spin').set_value(scheduleTemperature);
 
-            // Only destroy dialog and keep edit box alive
-            dialog.connect('response', Lang.bind(this, () => {
-                dialog.get_content_area().remove(editScheduleWidget);
-                dialog.destroy();
-            }));
-            this._builder.get_object('edit_button_cancel').connect("clicked", Lang.bind(this, () => {
-                dialog.get_content_area().remove(editScheduleWidget);
-                dialog.destroy();
-            }));
-            
-            // On clicking the save button, save the selected night light schedule 
-            this._builder.get_object('edit_button_save').connect("clicked", Lang.bind(this, () => {
-                const scheduleIdx = this._scheduleDataModel.get_path(selectedSchedule[2]).get_indices();
-                const editHourSpinValue = this._builder.get_object('edit_hour_spin').get_value();
-                const editMinuteSpinValue = this._builder.get_object('edit_minute_spin').get_value();
-                const editTemperatureSpinValue = this._builder.get_object('edit_temperature_spin').get_value();
-                const schedule = `{"hour": ${editHourSpinValue}, "minute": ${editMinuteSpinValue}, "temperature": ${editTemperatureSpinValue}}`;
+        });
+                
+        // On clicking cancel button, close dialog
+        this._builder.get_object('edit_button_cancel').connect("clicked", () => {
 
-                this._schedule[scheduleIdx] = schedule;
-                this._autoNightLightSettings.set_strv('night-light-schedule', this._schedule);
-                this._refreshTreeView(scheduleIdx);
-                dialog.get_content_area().remove(editScheduleWidget);
-                dialog.destroy();
-            }));
-        }));
+            this.editDialog.hide();
+
+        }); 
+
+        // On clicking the save button, save the selected night light schedule 
+        this._builder.get_object('edit_button_save').connect("clicked", () => {
+
+            const editHourSpinValue = this._builder.get_object('edit_hour_spin').get_value();
+            const editMinuteSpinValue = this._builder.get_object('edit_minute_spin').get_value();
+            const editTemperatureSpinValue = this._builder.get_object('edit_temperature_spin').get_value();
+            const schedule = `{"hour": ${editHourSpinValue}, "minute": ${editMinuteSpinValue}, "temperature": ${editTemperatureSpinValue}}`;
+
+            switch(this._addOrEdit) {
+                case 'add':
+
+                    // Check if schedule already exists to avoid duplicate schedules
+                    for (var i = 0; i < this._schedule.length; i++) {
+                        if (this._schedule[i].includes(`"hour": ${editHourSpinValue}, "minute": ${editMinuteSpinValue}`)) {
+                            this.editDialog.hide();
+                            return;
+                        }
+                    }
+
+                    // Create new schedule if it does not already exist 
+                    this._schedule.push(schedule);
+                    
+                    // Refresh the treeview and close dialog
+                    this._refreshTreeView();
+
+                    break;
+                case 'edit':
+
+                    // If editing a schedule, override schedule instead of creating new
+                    const selectedSchedule = this._scheduleTreeView.get_selection().get_selected();
+                    const scheduleIdx = this._scheduleDataModel.get_path(selectedSchedule[2]).get_indices();
+                    this._schedule[scheduleIdx] = schedule;
+                    this._refreshTreeView(scheduleIdx);
+
+                    break;
+                default:
+                    this.editDialog.hide();
+                    return;
+            }
+
+            this._autoNightLightSettings.set_strv('night-light-schedule', this._schedule);
+            this.editDialog.hide();
+        });
 
     }
 });

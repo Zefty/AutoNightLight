@@ -18,9 +18,8 @@
 
 /* exported init */
 
-const { Gio } = imports.gi;
+const { Gio, GObject } = imports.gi;
 const Mainloop = imports.mainloop;
-const Lang = imports.lang;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
@@ -28,10 +27,24 @@ const Me = ExtensionUtils.getCurrentExtension();
 // GSettings schema
 const COLOR_SCHEMA = 'org.gnome.settings-daemon.plugins.color';
 
-class Extension {
+const AutoNightLight = new GObject.Class({
+    Name: 'AutoNightLight',
+    GTypeName: 'AutoNightLight',
 
-    constructor() {
-        
+
+
+    // Constructor 
+    _init: function(params) {
+        this.parent(params);
+    },
+
+
+    
+    // Enable extension 
+    enable: function() {
+
+        log(`[${Me.metadata.name}] Enabling Extension`);
+
         // Load Gnome night light settings, extension settings, and extension schedule 
         this._settings = new Gio.Settings({schema_id: COLOR_SCHEMA});
         this._autoNightLightSettings = ExtensionUtils.getSettings('org.gnome.shell.extensions.autonightlight');
@@ -42,19 +55,17 @@ class Extension {
             this._schedule = this._autoNightLightSettings.get_strv('night-light-schedule');
             this._autoNightLight();
         });
-    }
-
-    enable() {
-
-        log(`[${Me.metadata.name}] Enabling Extension`);
 
         // Backup user's current night light temperature 
         this._autoNightLightSettings.set_uint('backup-temperature', this._settings.get_uint('night-light-temperature'));
         this._autoNightLight();
 
-    }
+    },
 
-    disable() {
+
+
+    // Disable extension
+    disable: function() {
 
         log(`[${Me.metadata.name}] Disabling Extension`);
 
@@ -66,9 +77,12 @@ class Extension {
             Mainloop.source_remove(this._nextUpdate);
             this._nextUpdate = null;
         }
-    }
+    },
 
-    _autoNightLight() {
+
+
+    // Auto night light scheduler
+    _autoNightLight: function() {
 
         // Clean up main loop 
         if(this._nextUpdate) {
@@ -99,17 +113,19 @@ class Extension {
             temperature = scheduleObject['temperature'];
         }
 
-        // Set night light to be changed based on next schedule 
-        log(`[${Me.metadata.name}] Next Update: ${nextUpdateSeconds}s | Temperature: ${temperature}K`)
-        this._nextUpdate = Mainloop.timeout_add_seconds(nextUpdateSeconds, Lang.bind(this, () => {
+        log(`[${Me.metadata.name}] Next Update: ${nextUpdateSeconds}s | Temperature: ${temperature}K`);
+        this._nextUpdate = Mainloop.timeout_add_seconds(nextUpdateSeconds, () => {
+            // Set night light to be changed based on next schedule 
+            log(`[${Me.metadata.name}] Changing Night Light Temperature: ${temperature}K`);
             this._settings.set_uint('night-light-temperature', temperature);
             this._autoNightLight();
             return false;
-        }));
+        });
     }
-}
+
+});
 
 function init() {
     log(`[${Me.metadata.name}] Initializing Extension`);
-    return new Extension();
+    return new AutoNightLight();
 }
