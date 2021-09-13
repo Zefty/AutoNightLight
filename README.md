@@ -8,6 +8,8 @@ Automatically adjust GNOME's in-build night light temperature from a schedule!
 
 ## How To Use?
 
+https://extensions.gnome.org/extension/4482/auto-night-light/  
+
 1. Open the GNOME extension manager 
 2. Turn on Auto Night Light 
 3. Click the gear icon to open up the night light schedule preferences 
