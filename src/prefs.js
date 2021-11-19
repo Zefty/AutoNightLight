@@ -46,10 +46,9 @@ const AutoNightLightPrefs = new GObject.Class({
         this.mainWidget = this._builder.get_object('main_prefs');
         this._scheduleTreeView = this._builder.get_object("schedule_tree_view");
         this._scheduleDataModel = this._builder.get_object("schedule_data_model");
-
+        
         // Create diaglog for editing schedule
-        this.editDialog;
-        this._editScheduleWidget = this._builder.get_object('edit_schedule_prefs');
+        this._editDialog;
         
         // Load schedules onto tree view 
         this._refreshTreeView();
@@ -92,23 +91,25 @@ const AutoNightLightPrefs = new GObject.Class({
         this._builder.get_object('schedule_add').connect("clicked", () => {
 
             // Open dialog for editing schedule
-            if(!this.editDialog) {
+            if(!this._editDialog) {
+
                 // Create a new dialog if it does not already exist 
-                this.editDialog = new Gtk.Dialog({ 
+                this._editDialog = new Gtk.Dialog({ 
                     title: 'Add & Modify Night Light Schedule',
-                    transient_for: this.mainWidget.get_toplevel(),
-                    use_header_bar: true,
+                    transient_for: this.mainWidget.get_root(),
                     modal: true 
                 });
 
                 // Load edit box from prefs.ui    
-                this.editDialog.get_content_area().add(this._editScheduleWidget);  
+                this._editDialog.get_content_area().append(this._builder.get_object('edit_schedule_prefs'));  
                 
-                // Change delete event to hide dialog instead of destroying dialog
-                this.editDialog.connect('delete-event', () => this.editDialog.hide_on_delete());
+                // Hide dialog instead of destroying it
+                this._editDialog.set_hide_on_close(true);
+
             }
+
             this._addOrEdit = 'add';
-            this.editDialog.show_all(); 
+            this._editDialog.show(); 
             
         });
 
@@ -135,23 +136,23 @@ const AutoNightLightPrefs = new GObject.Class({
             const scheduleTemperature = this._scheduleDataModel.get_value(selectedSchedule[2], 1);
 
             // Open dialog for editing schedule
-            if(!this.editDialog) {
+            if(!this._editDialog) {
+
                 // Create a new dialog if it does not already exist 
-                this.editDialog = new Gtk.Dialog({ 
+                this._editDialog = new Gtk.Dialog({ 
                     title: 'Add & Modify Night Light Schedule',
-                    transient_for: this.mainWidget.get_toplevel(),
-                    use_header_bar: true,
+                    transient_for: this.mainWidget.get_root(),
                     modal: true 
                 });
 
                 // Load edit box from prefs.ui    
-                this.editDialog.get_content_area().add(this._editScheduleWidget);  
+                this._editDialog.get_content_area().append(this._builder.get_object('edit_schedule_prefs'));  
                 
-                // Change delete event to hide dialog instead of destroying dialog
-                this.editDialog.connect('delete-event', () => this.editDialog.hide_on_delete());
+                // Hide dialog instead of destroying it
+                this._editDialog.set_hide_on_close(true);
             }
             this._addOrEdit = 'edit';
-            this.editDialog.show_all();  
+            this._editDialog.show();  
 
             // Load edit box with selected schedule data 
             this._builder.get_object('edit_hour_spin').set_value(scheduleTime.split(':')[0]);
@@ -163,7 +164,7 @@ const AutoNightLightPrefs = new GObject.Class({
         // On clicking cancel button, close dialog
         this._builder.get_object('edit_button_cancel').connect("clicked", () => {
 
-            this.editDialog.hide();
+            this._editDialog.hide();
 
         }); 
 
@@ -181,7 +182,7 @@ const AutoNightLightPrefs = new GObject.Class({
                     // Check if schedule already exists to avoid duplicate schedules
                     for (var i = 0; i < this._schedule.length; i++) {
                         if (this._schedule[i].includes(`"hour": ${editHourSpinValue}, "minute": ${editMinuteSpinValue}`)) {
-                            this.editDialog.hide();
+                            this._editDialog.hide();
                             return;
                         }
                     }
@@ -203,12 +204,12 @@ const AutoNightLightPrefs = new GObject.Class({
 
                     break;
                 default:
-                    this.editDialog.hide();
+                    this._editDialog.hide();
                     return;
             }
 
             this._autoNightLightSettings.set_strv('night-light-schedule', this._schedule);
-            this.editDialog.hide();
+            this._editDialog.hide();
         });
 
     }
@@ -220,7 +221,5 @@ function init() {
 
 function buildPrefsWidget() {
     let prefs = new AutoNightLightPrefs();
-    let widget = prefs.mainWidget;
-    widget.show_all();
-    return widget;
+    return prefs.mainWidget;
 }
