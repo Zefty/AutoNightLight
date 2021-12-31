@@ -39,8 +39,9 @@ const AutoNightLightPrefs = new GObject.Class({
         this._schedule = this._autoNightLightSettings.get_strv('night-light-schedule');
 
         // Create new UI builder from prefs.ui 
-        this._builder = new Gtk.Builder(),
-        this._builder.add_from_file(Me.dir.get_path() + "/prefs.ui");
+        this._builder = new Gtk.Builder();
+        this._builder.add_from_file(Me.dir.get_path() + "/ui/prefs_gtk" + Gtk.get_major_version() + ".ui");
+        log(`[${Me.metadata.name}] ${Me.dir.get_path() + "/ui/prefs_gtk" + Gtk.get_major_version() + ".ui"}`)
 
         // Create the main schedule widget and load in model and view 
         this.mainWidget = this._builder.get_object('main_prefs');
