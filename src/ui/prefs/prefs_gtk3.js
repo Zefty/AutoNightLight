@@ -20,7 +20,7 @@ const AutoNightLightPrefsGTK3 = new GObject.Class({
 
         // Create new UI builder from prefs.ui 
         this._builder = new Gtk.Builder(),
-        this._builder.add_from_file(Me.dir.get_path() + "/prefs.ui");
+        this._builder.add_from_file(Me.dir.get_path() + "/ui/glade/prefs_gtk3.ui");
 
         // Create the main schedule widget and load in model and view 
         this.mainWidget = this._builder.get_object('main_prefs');
