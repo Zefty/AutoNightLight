@@ -19,3 +19,10 @@ https://extensions.gnome.org/extension/4482/auto-night-light/
 7. To edit a schedule, select a schedule and click the edit icon 
 
 NOTE: Make sure you have GNOME's night light enabled! And set to custom schedule midnight-midnight (so that night light is always active)
+
+## How To Debug?
+  
+journalctl -f -o cat | grep "Auto Night Light"
+
+
+
