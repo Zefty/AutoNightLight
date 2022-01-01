@@ -3,8 +3,8 @@
   "description": "Automatically adjust night light",
   "name": "Auto Night Light",
   "shell-version": [
-    "3.32",
     "3.34",
+    "3.32",
     "3.36",
     "3.38",
     "40",
@@ -12,5 +12,5 @@
   ],
   "url": "https://github.com/Zefty/AutoNightLight",
   "uuid": "autonightlight@zefty.github.io",
-  "version": 4
+  "version": 7
 }

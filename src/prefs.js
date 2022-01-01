@@ -19,8 +19,10 @@
 /* exported init buildPrefsWidget */
 const Gtk = imports.gi.Gtk;
 const GTKVersion = Gtk.get_major_version();
+
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
+
 const PrefsGTK3 = Me.imports.ui.prefs.prefs_gtk3.AutoNightLightPrefsGTK3;
 const PrefsGTK4 = Me.imports.ui.prefs.prefs_gtk4.AutoNightLightPrefsGTK4;
 
@@ -29,7 +31,7 @@ function init() {
 }
 
 function buildPrefsWidget() {
-    log(`[${Me.metadata.name} v${Me.metadata.version}][GTK${GTKVersion}]`)
+    log(`[${new Date().toUTCString()}][${Me.metadata.name} v${Me.metadata.version}][GTK${GTKVersion}]`)
 
     // Return correct UI, given GTK version (trying to support gnome legacy)
     switch(GTKVersion) {
