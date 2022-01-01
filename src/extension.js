@@ -24,6 +24,8 @@ const Mainloop = imports.mainloop;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 
+const Utils = Me.imports.utils.utils;
+
 // GSettings schema
 const COLOR_SCHEMA = 'org.gnome.settings-daemon.plugins.color';
 
@@ -43,7 +45,7 @@ const AutoNightLight = new GObject.Class({
     // Enable extension 
     enable: function() {
 
-        log(`[${Me.metadata.name}] Enabling Extension`);
+        log(`[${new Date().toUTCString()}][${Me.metadata.name} v${Me.metadata.version}] Enabling Extension`);
 
         // Load Gnome night light settings, extension settings, and extension schedule 
         this._settings = new Gio.Settings({schema_id: COLOR_SCHEMA});
@@ -67,7 +69,7 @@ const AutoNightLight = new GObject.Class({
     // Disable extension
     disable: function() {
 
-        log(`[${Me.metadata.name}] Disabling Extension`);
+        log(`[${new Date().toUTCString()}][${Me.metadata.name} v${Me.metadata.version}] Disabling Extension`);
 
         // Restore user's night light temperature 
         this._settings.set_uint('night-light-temperature', this._autoNightLightSettings.get_uint('backup-temperature'));
@@ -99,24 +101,26 @@ const AutoNightLight = new GObject.Class({
         const now = new Date();
         const hour = now.getHours(), minutes = now.getMinutes(), seconds = now.getSeconds();
         const totalSecondsNow = hour * 60 * 60 + minutes * 60 + seconds;
+
+        // Get closest shedule for next update
+        const closestSchedule = Utils.ClosestSchedule(totalSecondsNow, this._schedule);
+        const closestScheduleObject = JSON.parse(this._schedule[closestSchedule["scheduleIdx"]]);
+        let nextUpdateSeconds = closestSchedule["nextUpdateSeconds"];
+        let temperature = closestScheduleObject['temperature'];
         
-        // Iterate and find the next schedule based on time closest to current time 
-        let temperature = JSON.parse(this._schedule[0])['temperature'];
-        let nextUpdateSeconds = Infinity;
-        for(var i = 0; i < this._schedule.length; i++) {
-            const scheduleObject = JSON.parse(this._schedule[i]);
-            const totalSecondsSchedule = scheduleObject['hour'] * 60 * 60 + scheduleObject['minute'] * 60;
-            let temp = totalSecondsSchedule - totalSecondsNow;
-            if(temp <= 0) temp = 24 * 60 * 60 + temp;
-            if(temp > nextUpdateSeconds) continue;
-            nextUpdateSeconds = temp;
-            temperature = scheduleObject['temperature'];
+        // Check previous schedule and override next schedule if required 
+        // NOTE: we do this because if we restart our system/something breaks, Auto Night Light is able to fall back to previous schedule as if nothing broke...
+        const prevScheduleIdx = closestSchedule['scheduleIdx'] - 1 >= 0 ? closestSchedule['scheduleIdx'] - 1 : this._schedule.length - 1;
+        const prevScheduleObject = JSON.parse(this._schedule[prevScheduleIdx]);
+        if(this._settings.get_uint('night-light-temperature') != prevScheduleObject['temperature']) {
+            nextUpdateSeconds = 0;
+            temperature = prevScheduleObject['temperature'];
         }
 
-        log(`[${Me.metadata.name}] Next Update: ${nextUpdateSeconds}s | Temperature: ${temperature}K`);
+        // Add to the main loop, the update to night light temperature 
+        log(`[${new Date().toUTCString()}][${Me.metadata.name} v${Me.metadata.version}] Next Update: ${nextUpdateSeconds}s | Temperature: ${temperature}K`);
         this._nextUpdate = Mainloop.timeout_add_seconds(nextUpdateSeconds, () => {
-            // Set night light to be changed based on next schedule 
-            log(`[${Me.metadata.name}] Changing Night Light Temperature: ${temperature}K`);
+            log(`[${new Date().toUTCString()}][${Me.metadata.name} v${Me.metadata.version}] Changing Night Light Temperature: ${temperature}K`);
             this._settings.set_uint('night-light-temperature', temperature);
             this._autoNightLight();
             return false;
@@ -126,6 +130,6 @@ const AutoNightLight = new GObject.Class({
 });
 
 function init() {
-    log(`[${Me.metadata.name}] Initializing Extension`);
+    log(`[${new Date().toUTCString()}][${Me.metadata.name} v${Me.metadata.version}] Initializing Extension`);
     return new AutoNightLight();
 }
