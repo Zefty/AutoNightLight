@@ -3,7 +3,7 @@ const {Gio, GObject, Gtk, GLib} = imports.gi;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 
-const AutoNightLightPrefsGTK3 = new GObject.Class({
+var AutoNightLightPrefsGTK3 = new GObject.Class({
     Name: 'AutoNightLightPrefsGTK3',
     GTypeName: 'AutoNightLightPrefsGTK3',
     Extends: Gtk.Box,
